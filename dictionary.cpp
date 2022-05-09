@@ -23,7 +23,6 @@ Word::Word(const wstring& str) {
                 if (begin == 0)
                     this->word = str.substr(begin, pos - begin);
                 else
-//                    break;
                     this->writeGrammeme(str.substr(begin, pos - begin));
 
                 begin = pos + 1;
@@ -38,7 +37,7 @@ void Word::writeGrammeme(const wstring& str) {
         str == L"GRND" || str == L"NUMR" || str == L"ADVB" || str == L"NPRO" ||
         str == L"PRED" || str == L"PREP" || str == L"CONJ" || str == L"PRCL" ||
         str == L"INTJ") {
-        this->partOfSpeech = str;
+        this->pos = str;
     } else
     if (str == L"anim" || str == L"inan") {
         this->anim = str;
@@ -88,6 +87,83 @@ void Word::writeGrammeme(const wstring& str) {
         str == L"Init" || str == L"Adjx" || str == L"Ms-f" || str == L"Hypo") {
         this->voic = str;
     }
+}
+
+void Word::setAttr(const string& key, const wstring& value) {
+    if (key == "pos" || key == "anim" || key == "gender" ||
+        key == "number" || key == "Case" || key == "aspc" ||
+        key == "trns" || key == "pers" || key == "tens" ||
+        key == "mood" || key == "invi" || key == "voic")
+        this->writeGrammeme(value);
+    else {
+        this->semantics.push_back(value);
+    }
+}
+
+bool Word::isSuitableWord(const Word* wordToCheck) {
+    if (!this->pos.empty())
+        if (this->pos != wordToCheck->pos) return false;
+    if (!this->anim.empty())
+        if (this->anim != wordToCheck->anim) return false;
+    if (!this->gender.empty())
+        if (this->gender != wordToCheck->gender) return false;
+    if (!this->number.empty())
+        if (this->number != wordToCheck->number) return false;
+    if (!this->Case.empty())
+        if (this->Case != wordToCheck->Case) return false;
+    if (!this->aspc.empty())
+        if (this->aspc != wordToCheck->aspc) return false;
+    if (!this->trns.empty())
+        if (this->trns != wordToCheck->trns) return false;
+    if (!this->pers.empty())
+        if (this->pers != wordToCheck->pers) return false;
+    if (!this->tens.empty())
+        if (this->tens != wordToCheck->tens) return false;
+    if (!this->mood.empty())
+        if (this->mood != wordToCheck->mood) return false;
+    if (!this->invi.empty())
+        if (this->invi != wordToCheck->invi) return false;
+    if (!this->voic.empty())
+        if (this->voic != wordToCheck->voic) return false;
+
+    // TODO: semantic check
+    return true;
+}
+wostream& operator<<(wostream& os, const Word& w)
+{
+    if (!w.word.empty())
+        os << "word: " << w.word << " | ";
+    if (!w.pos.empty())
+        os << "pos: " << w.pos << " | ";
+    if (!w.anim.empty())
+        os << "anim: " << w.anim << " | ";
+    if (!w.gender.empty())
+        os << "gender: " << w.gender << " | ";
+    if (!w.number.empty())
+        os << "number: " << w.number << " | ";
+    if (!w.Case.empty())
+        os << "Case: " << w.Case << " | ";
+    if (!w.aspc.empty())
+        os << "aspc: " << w.aspc << " | ";
+    if (!w.trns.empty())
+        os << "trns: " << w.trns << " | ";
+    if (!w.pers.empty())
+        os << "pers: " << w.pers << " | ";
+    if (!w.tens.empty())
+        os << "tens: " << w.tens << " | ";
+    if (!w.mood.empty())
+        os << "mood: " << w.mood << " | ";
+    if (!w.invi.empty())
+        os << "invi: " << w.invi << " | ";
+    if (!w.voic.empty())
+        os << "voic: " << w.voic << " | ";
+    if (!w.semantics.empty()) {
+        os << "semantics: ";
+        for (const wstring& semantic: w.semantics)
+            os << semantic << " ";
+    }
+
+    return os;
 }
 
 wstring getWord(const wstring &line) {

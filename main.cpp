@@ -141,10 +141,9 @@ void handleFile(const string& filepath, const vector<vector<Word*>>& fileContent
             for (int modelWordPosition = 0; modelWordPosition < model->words.size(); modelWordPosition++) {
                 bool correctModelWord = false;
 
+                Word *modelWord = model->words[modelWordPosition];
                 for (Word *word: fileContent[wordPosition + modelWordPosition]) {
-                    if (word->partOfSpeech == model->words[modelWordPosition]->partOfSpeech) {
-//                        wcout << word->word << ": " << word->partOfSpeech << " - "
-//                              << model->words[modelWordPosition]->partOfSpeech << endl;
+                    if (modelWord->isSuitableWord(word)) {
                         suitableWords.push_back(word);
                         correctModelWord = true;
                         break;
@@ -156,22 +155,15 @@ void handleFile(const string& filepath, const vector<vector<Word*>>& fileContent
                 }
             }
             if (correctModel) {
-                cout << model->modelName << ": " << endl;
+                wstring textPart;
                 for (Word* textWord : suitableWords) {
-                    wcout << " - " << textWord->word << ": " << textWord->partOfSpeech << endl;
+                    textPart += textWord->word + L" ";
                 }
-                cout << endl;
+                model->textEntries.push_back(textPart);
             }
         }
     }
 
-//    for (const vector<Word*>& wordForms : fileContent) {
-//        for (Word *word: wordForms) {
-//        handleWord(word,&leftWordContext,
-//                   NGrams, windowSize, filepath, wordPosition);
-//        }
-//        wordPosition++;
-//    }
 }
 
 unordered_map <string, vector<vector<Word*>>> readAllTexts(const vector<string>& files,
@@ -205,7 +197,7 @@ unordered_map <string, vector<vector<Word*>>> readAllTexts(const vector<string>&
                 if (dictionary->find(wordStr) == dictionary->end()) {
                     Word *newWord = new Word();
                     newWord->word = wordStr;
-                    newWord->partOfSpeech = L"UNKW";
+                    newWord->pos = L"UNKW";
                     dictionary->emplace(newWord->word, vector<Word *>{newWord});
                 }
 
@@ -219,7 +211,7 @@ unordered_map <string, vector<vector<Word*>>> readAllTexts(const vector<string>&
                     if (dictionary->find(punct) == dictionary->end()) {
                         Word *newWord = new Word();
                         newWord->word = punct;
-                        newWord->partOfSpeech = L"UNKW";
+                        newWord->pos = L"UNKW";
                         dictionary->emplace(newWord->word, vector<Word *>{newWord});
                     }
 
@@ -282,7 +274,7 @@ void analyzeCorpusWithModels(const string& dictPath, const string& corpusPath,
 }
 
 int main() {
-    OUTPUT_COUNT = 100;
+    OUTPUT_COUNT = 10;
 
     locale::global(locale("ru_RU.UTF-8"));
     wcout.imbue(locale("ru_RU.UTF-8"));
@@ -290,9 +282,7 @@ int main() {
     string dictPath = "dict_opcorpora_clear.txt";
     string corpusPath = "/Users/titrom/Desktop/Computational Linguistics/Articles";
     string outputFile = "ngrams.txt";
-    string modelsPath = "/Users/titrom/Desktop/Computational Linguistics/rules";
-
-//    auto dictionary = initDictionary(dictPath);
+    string modelsPath = "/Users/titrom/Desktop/Computational Linguistics/models";
 
     vector<string> modelsFiles = getFilesFromDir(modelsPath);
     vector<Model*> models;
@@ -305,24 +295,32 @@ int main() {
         auto model = new Model(modelName);
         for (const auto& word : modelJson["Words"]) {
             auto modelWord = new Word();
-            if (word.contains("pos")) {
-                string str = word["pos"].get<string>();
-                wstring attr = wstring_convert<codecvt_utf8<wchar_t>>().from_bytes(str.data());
-                modelWord->writeGrammeme(attr);
+            for (auto wordItem : word.items()) {
+                string value = wordItem.value().get<string>();
+                wstring wideValue = wstring_convert<codecvt_utf8<wchar_t>>().from_bytes(value.data());
+                modelWord->setAttr(wordItem.key(), wideValue);
             }
             model->words.push_back(modelWord);
         }
         models.push_back(model);
     }
 
+    analyzeCorpusWithModels(dictPath, corpusPath, models, outputFile);
+
     for (auto model : models) {
         cout << model->modelName << ": " << model->textEntries.size() << " entries" << endl;
         for (auto word: model->words)
-            wcout << " - " << word->partOfSpeech << endl;
+            wcout << " - " << *word << endl;
+        cout << "Text Entries: " << model->textEntries.size() << endl;
+
+        for (int index = 0; index < model->textEntries.size(); index++) {
+            if (index < OUTPUT_COUNT)
+                wcout << " - " << model->textEntries[index] << endl;
+        }
         cout << endl;
+
     }
 
-    analyzeCorpusWithModels(dictPath, corpusPath, models, outputFile);
 
     return 0;
 }

@@ -14,7 +14,7 @@ class Model {
 public:
     string modelName;
     vector <wstring> textEntries;
-    vector <Word*> words;
+    vector<Word*> words;
 
     Model(string modelName) {
         this->modelName = std::move(modelName);
