@@ -31,15 +31,14 @@ public:
     wstring invi;
     wstring voic;
     vector<wstring> semantics;
-    Word* initWord;
+    Word* initWord = nullptr;
 
     Word();
     Word(const std::__1::basic_string<wchar_t, std::__1::char_traits<wchar_t>, std::__1::allocator<wchar_t>> &str);
 
     void writeGrammeme(const std::wstring &str);
     void setAttr(const string& key, const wstring& value);
-
-    bool isSuitableWord(const Word* wordToCheck);
+    bool isSuitableWord(const Word *wordToCheck, unordered_map<wstring, vector<wstring>> &semantics) const;
 };
 
 wostream& operator<<(wostream& os, const Word& w);

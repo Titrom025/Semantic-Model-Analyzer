@@ -128,7 +128,8 @@ void handleWord(Word* word,
 
 void handleFile(const string& filepath, const vector<vector<Word*>>& fileContent,
                 unordered_map <wstring, vector<Word*>> *dictionary,
-                vector<Model*> &models) {
+                vector<Model*> &models,
+                unordered_map <wstring, vector<wstring>> &semantics) {
     vector<Word*> leftWordContext;
 
     for (int wordPosition = 0; wordPosition < fileContent.size(); wordPosition++) {
@@ -143,7 +144,7 @@ void handleFile(const string& filepath, const vector<vector<Word*>>& fileContent
 
                 Word *modelWord = model->words[modelWordPosition];
                 for (Word *word: fileContent[wordPosition + modelWordPosition]) {
-                    if (modelWord->isSuitableWord(word)) {
+                    if (modelWord->isSuitableWord(word, semantics)) {
                         suitableWords.push_back(word);
                         correctModelWord = true;
                         break;
@@ -157,13 +158,12 @@ void handleFile(const string& filepath, const vector<vector<Word*>>& fileContent
             if (correctModel) {
                 wstring textPart;
                 for (Word* textWord : suitableWords) {
-                    textPart += textWord->word + L" ";
+                    textPart += textWord->word + L" "; // + L"(" + textWord->initWord->word + L") ";
                 }
                 model->textEntries.push_back(textPart);
             }
         }
     }
-
 }
 
 unordered_map <string, vector<vector<Word*>>> readAllTexts(const vector<string>& files,
@@ -229,52 +229,110 @@ unordered_map <string, vector<vector<Word*>>> readAllTexts(const vector<string>&
 }
 
 void analyzeCorpusWithModels(const string& dictPath, const string& corpusPath,
-                             vector<Model*> &models, const string& outputFile) {
+                             vector<Model*> &models,
+                             unordered_map <wstring, vector<wstring>> &semantics,
+                             const string& outputFile) {
     auto dictionary = initDictionary(dictPath);
     vector<string> files = getFilesFromDir(corpusPath);
 
-    vector<WordContext *> stableNGrams;
-    cout << "Start handling files\n";
-    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+//    vector<WordContext *> stableNGrams;
+//    cout << "Start handling files\n";
+//    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 
     unordered_map <string, vector<vector<Word*>>> filesContent = readAllTexts(files, &dictionary);
 
     for (const string &filepath: files) {
-        handleFile(filepath, filesContent.at(filepath), &dictionary, models);
+        handleFile(filepath, filesContent.at(filepath), &dictionary, models, semantics);
     }
 
-    struct {
-        bool operator()(const WordContext* a, const WordContext* b) const { return a->stability < b->stability; }
-    } comp;
-    sort(stableNGrams.begin(), stableNGrams.end(), comp);
+//    struct {
+//        bool operator()(const WordContext* a, const WordContext* b) const { return a->stability < b->stability; }
+//    } comp;
+//    sort(stableNGrams.begin(), stableNGrams.end(), comp);
 
-    ofstream outFile (outputFile.c_str());
+//    ofstream outFile (outputFile.c_str());
+//
+//    cout << "\n";
+//    int printCount = 0;
+//    for (const WordContext* context : stableNGrams) {
+//        string line = wstring_convert<codecvt_utf8<wchar_t>>().to_bytes(context->normalizedForm);
+//        outFile << "<\"" << line << "\", " << context->totalEntryCount << ">\n";
+//
+//        wcout << "<\"" << context->normalizedForm
+//        << "\", Total entries: " << context->totalEntryCount
+//        << ", TF: " << context->textEntry.size()
+//        << ", Stability: " << context->stability
+//        << ">\n";
+//
+//        printCount++;
+//        if (printCount >= OUTPUT_COUNT)
+//            break;
+//    }
 
-    cout << "\n";
-    int printCount = 0;
-    for (const WordContext* context : stableNGrams) {
-        string line = wstring_convert<codecvt_utf8<wchar_t>>().to_bytes(context->normalizedForm);
-        outFile << "<\"" << line << "\", " << context->totalEntryCount << ">\n";
+//    outFile.close();
+//    cout << "End handling files\n";
+//    std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+//    std::cout << "Time difference = " << std::chrono::duration_cast<std::chrono::seconds>(end - begin).count() << "[s]" << std::endl;
+}
 
-        wcout << "<\"" << context->normalizedForm
-        << "\", Total entries: " << context->totalEntryCount
-        << ", TF: " << context->textEntry.size()
-        << ", Stability: " << context->stability
-        << ">\n";
+void loadSemantics(const string& filepath, unordered_map <wstring, vector<wstring>> *semantics) {
+    json semanticJson;
+    ifstream semanticStream(filepath);
+    semanticStream >> semanticJson;
+    for (const auto& semantic : semanticJson["semantics"]) {
+        for (const auto& wordItem : semantic.items()) {
+            string semanticName = wordItem.key();
+            wstring wideSemanticName = wstring_convert<codecvt_utf8<wchar_t>>().from_bytes(semanticName.data());
 
-        printCount++;
-        if (printCount >= OUTPUT_COUNT)
-            break;
+            if (semantics->find(wideSemanticName) == semantics->end()) {
+                semantics->emplace(wideSemanticName, vector<wstring>{});
+            }
+
+            vector<wstring> &currSemantic = semantics->at(wideSemanticName);
+            for (string val : wordItem.value()) {
+                wstring wideVal = wstring_convert<codecvt_utf8<wchar_t>>().from_bytes(val.data());
+                currSemantic.push_back(wideVal);
+            }
+        }
     }
+}
 
-    outFile.close();
-    cout << "End handling files\n";
-    std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-    std::cout << "Time difference = " << std::chrono::duration_cast<std::chrono::seconds>(end - begin).count() << "[s]" << std::endl;
+void loadModels(const vector<string>& modelsFiles, vector<Model*> *models,
+                const string& semanticFile, unordered_map <wstring, vector<wstring>> *semantics) {
+    for (const auto& filepath : modelsFiles) {
+        cout << filepath;
+        if (filepath == semanticFile) {
+            loadSemantics(filepath, semantics);
+            continue;
+        }
+        json modelJson;
+        ifstream modelStream(filepath);
+        modelStream >> modelJson;
+        string modelName = modelJson["ModelName"];
+        auto model = new Model(modelName);
+        for (const auto& word : modelJson["Words"]) {
+            auto modelWord = new Word();
+            for (const auto& wordItem : word.items()) {
+                if (wordItem.key() == "semantics") {
+                    vector<string> values = wordItem.value().get<vector<string>>();
+                    for (const string& value : values) {
+                        wstring wideValue = wstring_convert<codecvt_utf8<wchar_t>>().from_bytes(value.data());
+                        modelWord->setAttr(wordItem.key(), wideValue);
+                    }
+                } else {
+                    string value = wordItem.value().get<string>();
+                    wstring wideValue = wstring_convert<codecvt_utf8<wchar_t>>().from_bytes(value.data());
+                    modelWord->setAttr(wordItem.key(), wideValue);
+                }
+            }
+            model->words.push_back(modelWord);
+        }
+        models->push_back(model);
+    }
 }
 
 int main() {
-    OUTPUT_COUNT = 10;
+    OUTPUT_COUNT = 50;
 
     locale::global(locale("ru_RU.UTF-8"));
     wcout.imbue(locale("ru_RU.UTF-8"));
@@ -283,34 +341,21 @@ int main() {
     string corpusPath = "/Users/titrom/Desktop/Computational Linguistics/Articles";
     string outputFile = "ngrams.txt";
     string modelsPath = "/Users/titrom/Desktop/Computational Linguistics/models";
+    string semanticFile = "/Users/titrom/Desktop/Computational Linguistics/models/vocab.json";
 
     vector<string> modelsFiles = getFilesFromDir(modelsPath);
     vector<Model*> models;
+    unordered_map <wstring, vector<wstring>> semantics;
+    loadModels(modelsFiles, &models, semanticFile, &semantics);
 
-    for (const auto& filepath : modelsFiles) {
-        json modelJson;
-        ifstream modelStream(filepath);
-        modelStream >> modelJson;
-        string modelName = modelJson["ModelName"];
-        auto model = new Model(modelName);
-        for (const auto& word : modelJson["Words"]) {
-            auto modelWord = new Word();
-            for (auto wordItem : word.items()) {
-                string value = wordItem.value().get<string>();
-                wstring wideValue = wstring_convert<codecvt_utf8<wchar_t>>().from_bytes(value.data());
-                modelWord->setAttr(wordItem.key(), wideValue);
-            }
-            model->words.push_back(modelWord);
-        }
-        models.push_back(model);
-    }
+    analyzeCorpusWithModels(dictPath, corpusPath, models, semantics, outputFile);
 
-    analyzeCorpusWithModels(dictPath, corpusPath, models, outputFile);
-
+    cout << endl << "Models: " << endl;
     for (auto model : models) {
-        cout << model->modelName << ": " << model->textEntries.size() << " entries" << endl;
-        for (auto word: model->words)
+        cout << model->modelName << ": " << endl;
+        for (auto word: model->words) {
             wcout << " - " << *word << endl;
+        }
         cout << "Text Entries: " << model->textEntries.size() << endl;
 
         for (int index = 0; index < model->textEntries.size(); index++) {
@@ -318,9 +363,15 @@ int main() {
                 wcout << " - " << model->textEntries[index] << endl;
         }
         cout << endl;
-
     }
 
+    cout << "Semantic vocab:" << endl;
+    for (const auto& semantic : semantics) {
+        wcout << semantic.first << ": [ ";
+        for (const auto& word: semantic.second)
+            wcout << word << ", ";
+        cout << "]" << endl;
+    }
 
     return 0;
 }

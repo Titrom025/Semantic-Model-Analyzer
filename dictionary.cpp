@@ -17,19 +17,18 @@ using recursive_directory_iterator = std::__fs::filesystem::recursive_directory_
 Word::Word() {}
 
 Word::Word(const wstring& str) {
-        int begin = 0;
-        for (int pos = 0; pos < str.size(); pos++) {
-            if (str[pos] == L' ') {
-                if (begin == 0)
-                    this->word = str.substr(begin, pos - begin);
-                else
-                    this->writeGrammeme(str.substr(begin, pos - begin));
-
-                begin = pos + 1;
-            }
-
+//    this->initWord = nullptr;
+    int begin = 0;
+    for (int pos = 0; pos < str.size(); pos++) {
+        if (str[pos] == L' ') {
+            if (begin == 0)
+                this->word = str.substr(begin, pos - begin);
+            else
+                this->writeGrammeme(str.substr(begin, pos - begin));
+            begin = pos + 1;
         }
     }
+}
 
 void Word::writeGrammeme(const wstring& str) {
     if (str == L"NOUN" || str == L"ADJF" || str == L"ADJS" || str == L"COMP" ||
@@ -100,7 +99,7 @@ void Word::setAttr(const string& key, const wstring& value) {
     }
 }
 
-bool Word::isSuitableWord(const Word* wordToCheck) {
+bool Word::isSuitableWord(const Word* wordToCheck, unordered_map <wstring, vector<wstring>> &semantics) const {
     if (!this->pos.empty())
         if (this->pos != wordToCheck->pos) return false;
     if (!this->anim.empty())
@@ -126,7 +125,24 @@ bool Word::isSuitableWord(const Word* wordToCheck) {
     if (!this->voic.empty())
         if (this->voic != wordToCheck->voic) return false;
 
-    // TODO: semantic check
+    if (!this->semantics.empty()) {
+        for (const wstring& semantic : this->semantics) {
+            bool correctSemantic = false;
+            vector<wstring> &semanticWords = semantics.at(semantic);
+            for (const wstring& semanticWord : semanticWords) {
+                wstring wordForm = wordToCheck->word;
+                if (wordToCheck->initWord != nullptr)
+                    wordForm = wordToCheck->initWord->word;
+
+                if (wordForm == semanticWord) {
+                    correctSemantic = true;
+                    break;
+                }
+            }
+            if (!correctSemantic) return false;
+        }
+    }
+
     return true;
 }
 wostream& operator<<(wostream& os, const Word& w)
@@ -160,7 +176,10 @@ wostream& operator<<(wostream& os, const Word& w)
     if (!w.semantics.empty()) {
         os << "semantics: ";
         for (const wstring& semantic: w.semantics)
-            os << semantic << " ";
+            os << semantic << " | ";
+    }
+    if (w.initWord != nullptr && !w.initWord->word.empty()) {
+        os << "init: " << w.initWord->word << " | ";
     }
 
     return os;
@@ -200,13 +219,15 @@ unordered_map <wstring, vector<Word*>> initDictionary(const string& filename) {
 
         wstring line = wstring_convert<codecvt_utf8<wchar_t>>().from_bytes(stringBegin, filePtr - 1);
 
+        Word *currentWord;
         if (initWord == nullptr) {
             initWord = new Word(line);
+            currentWord = initWord;
+        } else {
+            currentWord = new Word(line);
         }
 
-        Word *currentWord = new Word(line);
         currentWord->initWord = initWord;
-
         wstring word = getWord(line);
 
         if (dictionary.find(word) != dictionary.end()) {
