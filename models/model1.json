@@ -2,6 +2,6 @@
 	"ModelName": "Model 1",
 	"Words": [
 		{"pos": "ADJF"},
-		{"pos": "NOUN"}
+		{"semantics": ["Person"]}
 	]
 }

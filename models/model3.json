@@ -1,0 +1,8 @@
+{
+	"ModelName": "Programming languages context model",
+	"Words": [
+		{"pos": "VERB"},
+		{"pos": "PREP"},
+		{"semantics": ["ProgLang"]}
+	]
+}

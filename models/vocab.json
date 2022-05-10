@@ -1,0 +1,8 @@
+{
+	"semantics": [
+		{ "ProgLang": ["PYTHON", "JAVA", "C++", "PHP", "CSS", "HTML", "C", "RUBY", "JAVASCRIPT", "GO"] },
+		{ "Company": ["APPLE", "GOOGLE", "YANDEX", "SAMSUNG", "MICROSOFT", "ADOBE"] },
+		{ "Person": ["ПОЛЬЗОВАТЕЛЬ", "РАЗРАБОТЧИК", "ЧЕЛОВЕК", "КЛИЕНТ", "СПЕЦИАЛИСТ", "ИГРОК", 
+		  "ДРУГ", "АНАЛИТИК", "ЗАКАЗЧИК", "ПРОГРАММИСТ", "СОТРУДНИК", "", ""] }
+	]
+}
