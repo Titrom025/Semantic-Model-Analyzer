@@ -182,6 +182,12 @@ wostream& operator<<(wostream& os, const Word& w)
         os << "init: " << w.initWord->word << " | ";
     }
 
+    if (w.word.empty() && w.pos.empty() && w.anim.empty() && w.gender.empty() && w.number.empty() && w.Case.empty() &&
+        w.aspc.empty() && w.trns.empty() && w.pers.empty() && w.tens.empty() && w.mood.empty() && w.invi.empty() &&
+        w.voic.empty() && w.semantics.empty()) {
+        os << "ANY";
+    }
+
     return os;
 }
 
