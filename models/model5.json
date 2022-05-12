@@ -1,7 +1,8 @@
 {
-	"ModelName": "Companies context model 2",
+	"ModelName": "Companies context",
 	"Words": [
 		{"semantics": ["Company"]},
-		{"pos": "VERB"}
+		{"pos": "VERB"},
+		{}
 	]
 }

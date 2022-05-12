@@ -1,0 +1,8 @@
+{
+	"ModelName": "Person + Company",
+	"Words": [
+		{"semantics": ["Person"]},
+		{},
+		{"semantics": ["Company"]}
+	]
+}

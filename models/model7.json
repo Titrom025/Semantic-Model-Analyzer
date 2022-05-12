@@ -1,0 +1,7 @@
+{
+	"ModelName": "Masc NOUN + VERB",
+	"Words": [
+		{"pos": "NOUN", "gender": "masc"},
+		{"pos": "VERB"}
+	]
+}

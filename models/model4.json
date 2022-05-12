@@ -1,8 +1,8 @@
 {
-	"ModelName": "Companies context model",
+	"ModelName": "Programming languages context model",
 	"Words": [
-		{"pos": "VERB"},
-		{"pos": "PREP"},
-		{"semantics": ["Company"]}
+		{},
+		{"semantics": ["ProgLang"]},
+		{}
 	]
 }

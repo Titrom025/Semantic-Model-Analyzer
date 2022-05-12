@@ -1,0 +1,8 @@
+{
+	"ModelName": "Companies context model 2",
+	"Words": [
+		{"pos": "VERB"},
+		{"pos": "PREP"},
+		{"semantics": ["Company"]}
+	]
+}
