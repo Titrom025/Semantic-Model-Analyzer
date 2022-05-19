@@ -11,6 +11,7 @@
 #include "filesystem"
 #include <codecvt>
 #include <string>
+#include <sstream>
 
 using recursive_directory_iterator = std::__fs::filesystem::recursive_directory_iterator;
 
@@ -100,53 +101,96 @@ void Word::setAttr(const string& key, const wstring& value) {
     }
 }
 
-bool Word::isSuitableWord(const Word* wordToCheck, unordered_map <wstring, vector<wstring>> &semantics) const {
-    if (!this->word.empty() && !wordToCheck->word.empty())
-        if (this->word != wordToCheck->word) return false;
-    if (!this->pos.empty())
-        if (this->pos != wordToCheck->pos) return false;
-    if (!this->anim.empty())
-        if (this->anim != wordToCheck->anim) return false;
-    if (!this->gender.empty())
-        if (this->gender != wordToCheck->gender) return false;
-    if (!this->number.empty())
-        if (this->number != wordToCheck->number) return false;
-    if (!this->Case.empty())
-        if (this->Case != wordToCheck->Case) return false;
-    if (!this->aspc.empty())
-        if (this->aspc != wordToCheck->aspc) return false;
-    if (!this->trns.empty())
-        if (this->trns != wordToCheck->trns) return false;
-    if (!this->pers.empty())
-        if (this->pers != wordToCheck->pers) return false;
-    if (!this->tens.empty())
-        if (this->tens != wordToCheck->tens) return false;
-    if (!this->mood.empty())
-        if (this->mood != wordToCheck->mood) return false;
-    if (!this->invi.empty())
-        if (this->invi != wordToCheck->invi) return false;
-    if (!this->voic.empty())
-        if (this->voic != wordToCheck->voic) return false;
+bool Word::isSuitableWord(const vector<vector<Word*>>& words, int textPosition,
+                          unordered_map <wstring, vector<wstring>> &semantics, vector<int> *finalPos) {
+    for (int index = 0; index < words[textPosition].size(); index++) {
+        Word *wordToCheck = words[textPosition].at(index);
+        if (!this->word.empty() && !wordToCheck->word.empty())
+            if (this->word != wordToCheck->word) continue;
+        if (!this->pos.empty())
+            if (this->pos != wordToCheck->pos) continue;
+        if (!this->anim.empty())
+            if (this->anim != wordToCheck->anim) continue;
+        if (!this->gender.empty())
+            if (this->gender != wordToCheck->gender) continue;
+        if (!this->number.empty())
+            if (this->number != wordToCheck->number) continue;
+        if (!this->Case.empty())
+            if (this->Case != wordToCheck->Case) continue;
+        if (!this->aspc.empty())
+            if (this->aspc != wordToCheck->aspc) continue;
+        if (!this->trns.empty())
+            if (this->trns != wordToCheck->trns) continue;
+        if (!this->pers.empty())
+            if (this->pers != wordToCheck->pers) continue;
+        if (!this->tens.empty())
+            if (this->tens != wordToCheck->tens) continue;
+        if (!this->mood.empty())
+            if (this->mood != wordToCheck->mood) continue;
+        if (!this->invi.empty())
+            if (this->invi != wordToCheck->invi) continue;
+        if (!this->voic.empty())
+            if (this->voic != wordToCheck->voic) continue;
 
-    if (!this->semantics.empty()) {
-        for (const wstring& semantic : this->semantics) {
-            bool correctSemantic = false;
-            vector<wstring> &semanticWords = semantics.at(semantic);
-            for (const wstring& semanticWord : semanticWords) {
-                wstring wordForm = wordToCheck->word;
-                if (wordToCheck->initWord != nullptr)
-                    wordForm = wordToCheck->initWord->word;
+        if (!this->semantics.empty()) {
+            for (const wstring &semantic: this->semantics) {
+                bool correctSemantic = false;
+                vector<wstring> &semanticWords = semantics.at(semantic);
+                vector<int> resultIndexes;
 
-                if (wordForm == semanticWord) {
-                    correctSemantic = true;
-                    break;
+                for (const wstring &semanticWord: semanticWords) {
+                    if (semanticWord.find(L' ') != std::wstring::npos) {
+                        wstringstream iss(semanticWord);
+                        wstring ngramPart;
+                        int ngramPos = 0;
+                        while ( getline( iss, ngramPart, L' ' ) ) {
+                            correctSemantic = false;
+
+                            for (int ngramindex = 0; ngramindex < words[textPosition + ngramPos].size(); ngramindex++) {
+                                Word *wordToCheckNGramm = words[textPosition + ngramPos].at(ngramindex);
+                                wstring wordForm = wordToCheckNGramm->word;
+                                if (wordToCheckNGramm->initWord != nullptr)
+                                    wordForm = wordToCheckNGramm->initWord->word;
+
+                                if (ngramPos > 0)
+                                    wcout << " - " << wordForm << endl;
+
+                                if (wordForm == ngramPart) {
+                                    correctSemantic = true;
+                                    resultIndexes.push_back(ngramindex);
+                                    break;
+                                }
+                            }
+                            if (!correctSemantic) break;
+                            else {
+                                wcout << words[textPosition + ngramPos].at(resultIndexes.at(0))->word << endl;
+                            }
+                            ngramPos++;
+                        }
+
+                        if (correctSemantic) {
+                            *finalPos = resultIndexes;
+                            return true;
+                        }
+                    } else {
+                        wstring wordForm = wordToCheck->word;
+                        if (wordToCheck->initWord != nullptr)
+                            wordForm = wordToCheck->initWord->word;
+
+                        if (wordForm == semanticWord) {
+                            finalPos->push_back(index);
+                            return true;
+                        }
+                    }
                 }
+                return correctSemantic;
             }
-            if (!correctSemantic) return false;
         }
-    }
 
-    return true;
+        finalPos->push_back(index);
+        return true;
+    }
+    return false;
 }
 wostream& operator<<(wostream& os, const Word& w)
 {

@@ -38,7 +38,8 @@ public:
 
     void writeGrammeme(const std::wstring &str);
     void setAttr(const string& key, const wstring& value);
-    bool isSuitableWord(const Word *wordToCheck, unordered_map<wstring, vector<wstring>> &semantics) const;
+    bool isSuitableWord(const vector<vector<Word*>>& wordToCheck, int textPosition,
+                              unordered_map <wstring, vector<wstring>> &semantics, vector<int> *finalPos);
 };
 
 wostream& operator<<(wostream& os, const Word& w);

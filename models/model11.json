@@ -1,0 +1,9 @@
+{
+	"ModelName": "ProgLang + , + ProgLang",
+	"Words": [
+		{"semantics": ["ProgLang"]},
+		{"word": ","},
+		{"semantics": ["ProgLang"]}
+
+	]
+}

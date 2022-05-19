@@ -139,17 +139,24 @@ void handleFile(const string& filepath, const vector<vector<Word*>>& fileContent
             if (wordPosition + model->words.size() >= fileContent.size())
                 continue;
 
+            int ngramOffset = 0;
             for (int modelWordPosition = 0; modelWordPosition < model->words.size(); modelWordPosition++) {
                 bool correctModelWord = false;
 
                 Word *modelWord = model->words[modelWordPosition];
-                for (Word *word: fileContent[wordPosition + modelWordPosition]) {
-                    if (modelWord->isSuitableWord(word, semantics)) {
-                        suitableWords.push_back(word);
+
+                vector<int> finalPos;
+                if (modelWord->isSuitableWord(fileContent, wordPosition + modelWordPosition + ngramOffset, semantics, &finalPos)) {
+                    int wordCount = 0;
+                    for (int pos : finalPos) {
+                        suitableWords.push_back(fileContent[wordPosition + modelWordPosition + ngramOffset + wordCount].at(pos));
                         correctModelWord = true;
-                        break;
+                        if (wordCount > 0)
+                            ngramOffset++;
+                        wordCount++;
                     }
                 }
+
                 if (!correctModelWord) {
                     correctModel = false;
                     break;
