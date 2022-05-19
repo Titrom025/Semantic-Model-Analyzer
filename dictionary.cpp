@@ -89,7 +89,8 @@ void Word::writeGrammeme(const wstring& str) {
 }
 
 void Word::setAttr(const string& key, const wstring& value) {
-    if (key == "pos" || key == "anim" || key == "gender" ||
+    if (key == "word") this->word = value;
+    else if (key == "pos" || key == "anim" || key == "gender" ||
         key == "number" || key == "Case" || key == "aspc" ||
         key == "trns" || key == "pers" || key == "tens" ||
         key == "mood" || key == "invi" || key == "voic")
@@ -100,6 +101,8 @@ void Word::setAttr(const string& key, const wstring& value) {
 }
 
 bool Word::isSuitableWord(const Word* wordToCheck, unordered_map <wstring, vector<wstring>> &semantics) const {
+    if (!this->word.empty() && !wordToCheck->word.empty())
+        if (this->word != wordToCheck->word) return false;
     if (!this->pos.empty())
         if (this->pos != wordToCheck->pos) return false;
     if (!this->anim.empty())
@@ -148,38 +151,38 @@ bool Word::isSuitableWord(const Word* wordToCheck, unordered_map <wstring, vecto
 wostream& operator<<(wostream& os, const Word& w)
 {
     if (!w.word.empty())
-        os << "word: " << w.word << " | ";
+        os << "word: \"" << w.word << "\" | ";
     if (!w.pos.empty())
-        os << "pos: " << w.pos << " | ";
+        os << "pos: \"" << w.pos << "\" | ";
     if (!w.anim.empty())
-        os << "anim: " << w.anim << " | ";
+        os << "anim: \"" << w.anim << "\" | ";
     if (!w.gender.empty())
-        os << "gender: " << w.gender << " | ";
+        os << "gender: \"" << w.gender << "\" | ";
     if (!w.number.empty())
-        os << "number: " << w.number << " | ";
+        os << "number: \"" << w.number << "\" | ";
     if (!w.Case.empty())
-        os << "Case: " << w.Case << " | ";
+        os << "Case: \"" << w.Case << "\" | ";
     if (!w.aspc.empty())
-        os << "aspc: " << w.aspc << " | ";
+        os << "aspc: \"" << w.aspc << "\" | ";
     if (!w.trns.empty())
-        os << "trns: " << w.trns << " | ";
+        os << "trns: \"" << w.trns << "\" | ";
     if (!w.pers.empty())
-        os << "pers: " << w.pers << " | ";
+        os << "pers: \"" << w.pers << "\" | ";
     if (!w.tens.empty())
-        os << "tens: " << w.tens << " | ";
+        os << "tens: \"" << w.tens << "\" | ";
     if (!w.mood.empty())
-        os << "mood: " << w.mood << " | ";
+        os << "mood: \"" << w.mood << "\" | ";
     if (!w.invi.empty())
-        os << "invi: " << w.invi << " | ";
+        os << "invi: \"" << w.invi << "\" | ";
     if (!w.voic.empty())
-        os << "voic: " << w.voic << " | ";
+        os << "voic: \"" << w.voic << "\" | ";
     if (!w.semantics.empty()) {
         os << "semantics: ";
         for (const wstring& semantic: w.semantics)
-            os << semantic << " | ";
+            os << "\"" << semantic << "\" | ";
     }
     if (w.initWord != nullptr && !w.initWord->word.empty()) {
-        os << "init: " << w.initWord->word << " | ";
+        os << "init: \"" << w.initWord->word << "\" | ";
     }
 
     if (w.word.empty() && w.pos.empty() && w.anim.empty() && w.gender.empty() && w.number.empty() && w.Case.empty() &&
